@@ -1,0 +1,175 @@
+stages:
+  - test
+  - build
+  - deploy
+  - production
+
+variables:
+  CI_DOCKER_IMAGE_NAME : "repo.narvanventures.lc:9000/baazde-server-gillete"
+  CI_DOCKER_SERVICE_NAME : "gillete-server"
+  DEPLOY_DEV_VM : "narvan@192.168.10.81"
+  DEPLOY_STAGE_VM : "narvan@192.168.20.81"
+  DEPLOY_PROD_VM : "narvan@192.168.40.31"
+  CI_DOCKER_SPECIFIC_IMAGE_NAME : $CI_DOCKER_IMAGE_NAME:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}
+  CI_DOCKER_SPECIFIC_IMAGE_LATEST : $CI_DOCKER_IMAGE_NAME:${CI_COMMIT_REF_SLUG}-latest
+
+.connect_to_vm:
+  before_script:
+    - eval $(ssh-agent -s)
+    - echo "$RUNNERDEV_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+
+
+test:
+  tags:
+    - runnerdev
+#  image: alpine
+  image: repo.narvanventures.lc:9000/alpine:deploy
+
+  stage: test
+
+  script:
+    - echo "Test!"
+
+
+
+
+build:
+  tags:
+    - runnerdev
+  stage: build
+  image:
+    name: repo.narvanventures.lc:9000/kaniko-project-executor:debug-1.0.0
+    entrypoint: [ "" ]
+  script:
+    - echo "Going to  build docker image"
+    - sh /kaniko/init.sh
+    - if [ $CI_COMMIT_REF_NAME == "development" ] || [ $CI_COMMIT_REF_NAME == "dev" ] ; then CI_DOCKER_SPECIFIC_IMAGE_NAME="$CI_DOCKER_IMAGE_NAME:dv-$CI_COMMIT_SHORT_SHA" ; CI_DOCKER_SPECIFIC_IMAGE_LATEST="$CI_DOCKER_IMAGE_NAME:dev-latest" ; fi
+    - if [ $CI_COMMIT_REF_NAME == "stage" ] || [ $CI_COMMIT_REF_NAME == "staging" ] || ( expr match $CI_COMMIT_REF_NAME st-* > 0) ; then CI_DOCKER_SPECIFIC_IMAGE_NAME="$CI_DOCKER_IMAGE_NAME:$CI_COMMIT_TAG" ; CI_DOCKER_SPECIFIC_IMAGE_LATEST="$CI_DOCKER_IMAGE_NAME:stage-latest" ; fi
+    - if [ $CI_COMMIT_REF_NAME == "master" ] || [ $CI_COMMIT_REF_NAME == "prod" ] || ( expr match $CI_COMMIT_REF_NAME pr-* > 0 ) ; then CI_DOCKER_SPECIFIC_IMAGE_NAME="$CI_DOCKER_IMAGE_NAME:$CI_COMMIT_TAG" ; CI_DOCKER_SPECIFIC_IMAGE_LATEST="$CI_DOCKER_IMAGE_NAME:prod-latest" ; fi
+    - if [ $CI_COMMIT_REF_NAME == "master" ] || [ $CI_COMMIT_REF_NAME == "prod" ] || ( expr match $CI_COMMIT_REF_NAME pr-* > 0 ) ; then echo hi ; fi
+    - /kaniko/executor  --cache=true  --insecure-registry repo.narvanventures.lc:9000 --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_DOCKER_SPECIFIC_IMAGE_NAME --destination $CI_DOCKER_SPECIFIC_IMAGE_LATEST
+
+  when: manual
+
+
+
+
+
+deploy-dev:
+  stage: deploy
+  image: repo.narvanventures.lc:9000/alpine:deploy
+  extends: .connect_to_vm
+  tags:
+    - runnerdev
+  script:
+    - echo "Going to  deploy dev"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_DEV_VM "cd $CI_PROJECT_NAME; docker-compose  pull $CI_DOCKER_SERVICE_NAME ; docker-compose  up -d $CI_DOCKER_SERVICE_NAME"
+    - echo "Deploy finished"
+
+  when: manual
+
+
+
+
+install-dev:
+  stage: deploy
+  image: repo.narvanventures.lc:9000/alpine:deploy
+  extends: .connect_to_vm
+  tags:
+    - runnerdev
+  script:
+    - echo "Going to  deploy dev"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_DEV_VM "mkdir -p ~/$CI_PROJECT_NAME; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml down --remove-orphans > /dev/null 2>&1 || true"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_DEV_VM "docker network create dockernet  > /dev/null 2>&1 || true"
+    - lftp -u  narvan, sftp://$DEPLOY_DEV_VM -e "cd ~/$CI_PROJECT_NAME; put deployments/dev/docker-compose.yaml; bye;"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_DEV_VM "docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  pull $CI_DOCKER_SERVICE_NAME; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml up -d"
+    - echo "Deploy finished"
+
+  when: manual
+
+
+
+deploy-stage:
+  stage: deploy
+  image: repo.narvanventures.lc:9000/alpine:deploy
+  extends: .connect_to_vm
+  tags:
+    - runnerdev
+  script:
+    - echo "Going to  deploy stage"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_STAGE_VM "docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  pull $CI_DOCKER_SERVICE_NAME ; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  up -d $CI_DOCKER_SERVICE_NAME"
+    - echo "Deploy finished"
+
+  when: manual
+  only:
+    - tags
+  except:
+    - ^(?!stage).+@
+
+
+
+
+install-stage:
+  stage: deploy
+  image: repo.narvanventures.lc:9000/alpine:deploy
+  extends: .connect_to_vm
+  tags:
+    - runnerdev
+  script:
+    - echo "Going to  install stage"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_STAGE_VM "mkdir -p ~/$CI_PROJECT_NAME; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml down --remove-orphans > /dev/null 2>&1 || true"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_STAGE_VM "docker network create dockernet  > /dev/null 2>&1 || true"
+    - lftp -u  narvan, sftp://$DEPLOY_STAGE_VM -e "cd ~/$CI_PROJECT_NAME; put deployments/stage/docker-compose.yaml; bye;"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_STAGE_VM "docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  pull $CI_DOCKER_SERVICE_NAME; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml up -d"
+    - echo "Deploy finished"
+
+  when: manual
+  only:
+    - tags
+  except:
+    - ^(?!stage).+@
+
+
+deploy-prod:
+  stage: production
+  image: repo.narvanventures.lc:9000/alpine:deploy
+  tags:
+    - runnerpro
+  script:
+    - echo "Going to  deploy production"
+    - eval $(ssh-agent -s)
+    - echo "$RUNNERPRO_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_PROD_VM "docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  pull $CI_DOCKER_SERVICE_NAME ; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  up -d $CI_DOCKER_SERVICE_NAME"
+    - echo "Deploy finished"
+
+  when: manual
+  only:
+    - tags
+  except:
+    - branches
+
+
+
+
+
+
+install-prod:
+  stage: production
+  image: repo.narvanventures.lc:9000/alpine:deploy
+  tags:
+    - runnerpro
+  script:
+    - echo "Going to  install prod"
+    - eval $(ssh-agent -s)
+    - echo "$RUNNERPRO_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_PROD_VM "mkdir -p ~/$CI_PROJECT_NAME; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml down --remove-orphans > /dev/null 2>&1 || true"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_PROD_VM "docker network create dockernet  > /dev/null 2>&1 || true"
+    - lftp -u  narvan, sftp://$DEPLOY_PROD_VM -e "cd ~/$CI_PROJECT_NAME; put deployments/prod/docker-compose.yaml; bye;"
+    - ssh -o StrictHostKeyChecking=no $DEPLOY_PROD_VM "docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml  pull $CI_DOCKER_SERVICE_NAME; docker-compose -f $CI_PROJECT_NAME/docker-compose.yaml up -d"
+    - echo "Deploy finished"
+
+  when: manual
+  only:
+    - tags
+  except:
+    - branches

@@ -1,0 +1,56 @@
+
+
+
+class LogicVOs:
+    urgent_loan = 'urgent_loan'
+    cash_loan = 'cash_loan'
+    self_employment_loan = 'self_employment_loan'
+    buy_home_loan = 'buy_home_loan'
+    home_repair_loan = 'home_repair_loan'
+    buy_car_loan = 'buy_car_loan'
+    buy_commodity_loan = 'buy_commodity_loan'
+    marriage_loan = 'marriage_loan'
+    student_loan = 'student_loan'
+    installment = 'installment'
+    without_guarantor_loan = 'without_guarantor_loan'
+
+    name = 'name'
+    image = 'image'
+    interest_revenue = 'interest_revenue'
+    deposit_required = 'deposit_required'
+    maximum_payment_time = 'maximum_payment_time'
+    type_of_guarantee = 'type_of_guarantee'
+    max_loan = 'max_loan'
+    loan_Installment = 'loan_Installment'
+    opportunity_cost_blocked = 'opportunity_cost_blocked'
+    total_loan_interest = 'total_loan_interest'
+    total_loan_and_interest_figure = 'total_loan_and_interest_figure'
+    requires_deposit_boolian = 'requires_deposit_boolian'
+    blocked_deposit_boolian = 'blocked_deposit_boolian'
+    conditions = 'conditions'
+    other_costs = 'other_costs'
+    separate_deposit = 'separate_deposit'
+    loan_type = 'loan_type'
+    loan_type_id = 'loan_type_id'
+    single_url = 'single_url'
+    profit_integer ='profit_integer'
+    max_loan_integer = 'max_loan_integer'
+    maximum_payment_time_integer = 'maximum_payment_time_integer'
+    loan_Installment_integer = 'loan_Installment_integer'
+    total_loan_profit_integer ='total_loan_profit_integer'
+
+
+    marriage_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d8%a7%d8%b2%d8%af%d9%88%d8%a7%d8%ac/'
+    student_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d8%af%d8%a7%d9%86%d8%b4%d8%ac%d9%88%db%8c%db%8c/'
+    urgent_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d9%81%d9%88%d8%b1%db%8c/'
+    cash_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d9%86%d9%82%d8%af%db%8c/'
+    self_employment_url = 'https://www.rade.ir/service_cat/%d8%ae%d9%88%d8%af%d8%a7%d8%b4%d8%aa%d8%ba%d8%a7%d9%84%db%8c/'
+    buy_home_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d8%ae%d8%b1%db%8c%d8%af-%d9%85%d8%b3%da%a9%d9%86/'
+    home_repair_url = 'https://www.rade.ir/service_cat/%d8%aa%d8%b9%d9%85%db%8c%d8%b1%d8%a7%d8%aa-%d9%85%d8%b3%da%a9%d9%86/'
+    buy_car_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d8%ae%d9%88%d8%af%d8%b1%d9%88/'
+    buy_commodity_url = 'https://www.rade.ir/service_cat/%d8%ae%d8%b1%db%8c%d8%af-%da%a9%d8%a7%d9%84%d8%a7'
+    installment_url = 'https://www.rade.ir/service_cat/installment/'
+    without_guarantor_url = 'https://www.rade.ir/service_cat/%d9%88%d8%a7%d9%85-%d8%a8%d8%af%d9%88%d9%86-%d8%b6%d8%a7%d9%85%d9%86/'
+
+
+

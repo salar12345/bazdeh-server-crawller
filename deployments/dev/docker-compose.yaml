@@ -1,0 +1,18 @@
+version: '3'
+services:
+  gillete-server:
+    image: repo.narvanventures.lc:9000/baazde-server-gillete:dev-latest
+    restart: always
+
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/baazde
+
+    command: python3.9 -m bzgi.manage baazde_spiders
+      # for debuging
+    #    command: tail -f /dev/null
+    networks:
+      - dockernet
+
+networks:
+  dockernet:
+    external: true

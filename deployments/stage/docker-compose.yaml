@@ -1,0 +1,24 @@
+version: '3'
+services:
+  gillete-server:
+    image: repo.narvanventures.lc:9000/baazde-server-gillete:stage-latest
+    restart: always
+    ports:
+      - "8105:8105"
+
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/baazde
+      - GRPC_SERVE_HOST = ${GRPC_SERVE_HOST}
+      - ELASTIC_SEARCH_HOSTS=${ELASTIC_SEARCH_HOSTS}
+      - REDIS_HOST=redis
+      - REDIS_DB=0
+
+    command: python3.9 -m bzgi.manage run_grpc
+      # for debuging
+      #    command: tail -f /dev/null
+    networks:
+      - dockernet
+
+networks:
+  dockernet:
+    external: true
